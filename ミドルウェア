@@ -1,0 +1,134 @@
+
+# ミドルウェア
+コンピュータを制御するオペレーティングシステム（OS）と、特定の処理を行うアプリケーションソフトウェアとの仲立ちをするソフトウェアのこと。
+OSの基本的な機能だけでは、アプリケーションソフトが必要とする機能（サーバやデータベースとのやり取りなど）をカバーできない場合に、その必要な機能を集約してパッケージとしてまとめたものがミドルウェアで、OS上で作動し、OSよりも具体的な機能をアプリケーションソフトに提供する。
+
+ミドルウェアの存在により、それぞれのアプリケーションは目的に特化した機能だけでよくなる。そのため、アプリケーション開発の際、共通部分を省くことができ、システムの開発や導入の効率化に役立つ。
+
+|構成|
+|:---:|
+|アプリケーション|
+|ミドルウェア|
+|OS|
+|ハードウェア|
+
+つまり、サーバーもミドルウェア。
+
+## 種類
+
+|Type|Example|
+|:--|:--|
+|Web|Apache HTTP Server, IIS, Nginx|
+|AP|Cosminexus Application Server, JBoss, Tomcat, WebLogic Server, WebSphere Application Server|
+|DB|DB2, MySQL, Oracle Database, PostgreSQL, SQLServer|
+|バックアップ|Arcserve, Backup exec, NetBackup, NetVault|
+|ジョブ運用|JP1, Senju, SystemWalker, Tivoli, WebSAM|
+|監視|Himenos, JP1, OpenView, Senju, SystemWalker, Tivoli, WebSAM, ZABBIX|
+|高可用性クラスタ|CLUSTERPRO, HACMP, HAモニタ, HeartBeat, LifeKeeper, MSCS, PRIMECLUSTER, ServiceGuard, VCS|
+
+WebサーバーはWeb機能に特化している。  
+以降は、各ミドルウェアをかいつまむ。
+
+---
+
+# Webサーバー
+Webサーバーには、主にクライアントからのリクエストに対して「静的コンテンツを見せること」と「APサーバに動的コンテンツを要求し、返ってきた結果を見せること」という2つの役割がある。
+
+#### 静的コンテンツ
+誰が見ても常に同じ内容を表示するもの。Webサーバ内のディスクに保存されている。
+eg. 企業ホームページのトップ画像や事業内容のページが
+
+#### 動的コンテンツ
+見る人や時間などによって内容が変わるもの。クライアントからリクエストされる度に新たに作成される。
+eg. 銀行の残高やECサイト(Amazonなど)のショッピングカート
+
+上記の2つの役割を切り替える具体的な方法はURLで判断されることが一般的。
+
+* `http://www.bfts.co.jp/aaa.html`の場合、Webサーバに保存されている静的コンテンツ`aaa.html`を返す
+* `http://www.bfts.co.jp/douteki/aaa.html`の場合には、APサーバに処理を流して動的コンテンツ`aaa.html`を返す
+
+### Apache
+* WEBサーバとして求められる機能を満遍なく拡充させる
+* プロセス駆動アーキテクチャでマルチプロセス
+* リクエストが大量に来た際、プロセスが同時に起動するのでオーバーヘッドが非常に大きくなるというデメリット
+
+### Nginx
+
+* イベント駆動アーキテクチャ、シングルスレッドモデル
+* シングルスレッドでループ処理をまわし、キューに溜まったイベントを処理していく処理方式
+* C10Kが解決する
+
+**TIPS: **
+> 「C10K問題」（クライアント1万台問題）とは、ハードウェアの性能上は問題がなくても、あまりにもクライアントの数が多くなるとサーバがパンクする問題のこと。 万を超える接続に対応するプロセスやスレッドを生成するとメモリ上にプロセスやスレッドの管理領域が確保され、使われるメモリサイズもばかにならない。2012/05/04
+
+以下の3つの側面をもつ。
+
+* WEBサーバ
+* リバースプロキシサーバ
+* メールプロキシサーバ
+
+### IIS
+* Microsoft Windowsの標準Webサーバー（アプリケーションサーバー）サービスで
+* マルチスレッドモデルよりだが、ワーカープロセスによるマルチプロセスも組み合わさっているので、ハイブリッドアーキテクチャとしてもよいかも
+
+## Apache vs Nginx
+IISは普及率などからみて、比較対象から除く。  
+
+参考：
+
+* [http://www.hostingadvice.com/how-to/nginx-vs-apache/](http://www.hostingadvice.com/how-to/nginx-vs-apache/)  
+* [http://www.eschrade.com/page/performance-of-apache-2-4-with-the-event-mpm-compared-to-nginx/](http://www.eschrade.com/page/performance-of-apache-2-4-with-the-event-mpm-compared-to-nginx/)  
+* [http://www.speedemy.com/apache-vs-nginx-2015/](http://www.speedemy.com/apache-vs-nginx-2015/)
+
+
+### Performance
+
+##### Static Content
+静的コンテンツでは、明らかに**Nginx > Apache**。
+
+> 1000つの非同期通信のベンチマークテストでは、その差は2.5倍。別の512つの非同期通信のベンチマークテストでは、Nginxが4%少ないメモリ消費で2倍の速さを実現した。
+
+
+##### Dynamic Content
+動的コンテンツでは、**Nginx == Apache**。
+
+> あるベンチマークテストによると、同じコンカレンシーだったが、理由としては処理が行われるのがWebサーバ上というよりもPHPの実行環境であったことにありそう。とはいえ、他のベンチマークテストでも、同じような結果が出ている。
+
+### Operating System Support
+**Nginx <= Apache**。
+
+> * ApacheはUnix系の環境とWindowsのフルサポート
+* Nginxは、モダンなUnix系の環境とWindowsのサポート少々
+
+ここにきてなんとか、Apacheさん優勢。
+
+### Security
+どちらにも脆弱性はあるが、Nginxの方が桁違いに小さい。
+
+### Flexibility
+動的共有モジュールに関しては、**Nginx < Apache**。
+
+> 動的共有モジュール（Dynamic Shared Object）のサポートはApacheだけだったが、2016年からNginxでも採用されはじめた。ただ、まだほとんどのモジュールの対応はこれからとなりそう。
+
+> ###### 動的モジュールとは
+> nginxは多数のモジュールから構成されており、nginxをビルドするときにモジュールがnginxバイナリに静的に組み込まれます。 追加したいモジュールがあるときにも、同様にnginxのビルド時にそのモジュールを指定することによりnginxバイナリにそのモジュールが静的に組み込まれます。 このようにnginxのモジュールを追加したり変更したりするたびにnginxバイナリ自体をビルドし直す必要があり、運用が煩雑でした。
+
+#### Apache .htaccess
+
+### Documentation
+**Nginx <= Apache**。
+
+### Support
+なんともいえないけど、**Nginx => Apache**。
+
+> * Apacheは、メーリスとIRC、StackOverflow、サードパーティからのサポートがある
+* Nginxは、メーリスとIRC、StackOverflow、フォーラム、企業は商用向けのプロダクトも販売している
+
+### まとめ
+静的コンテンツはNginx、動的コンテンツはApacheというように使い分けをした方が良い。
+
+## AP(アプリケーション)サーバー
+APサーバは、Webサーバから受けたリクエストをもとにJavaやPHPなどで作成されたアプリケーションを実行して動的コンテンツを生成する。また、必要であればDBサーバへリクエストを行い、返ってきたデータを加工して「動的コンテンツ」に埋め込む。
+
+##  DB(データベース)サーバー
+データが大量に保管された場所は、**ストレージ**。DBサーバーはストレージに新たなデータを書き込んだり、必要な情報を引き出したり更新したりする。
